@@ -1,6 +1,7 @@
 import * as vector from './math/vec.js'
 import * as camera from './math/camera.js'
 import * as matrix from './math/mat.js'
+import * as timer from './timer.js'
 
 function vert(pos)
 {
@@ -37,7 +38,7 @@ class _primitive {
       return this.dedecader(size);
     }
 
-  normals() {
+  autoNormals() {
   let i;
 
   for (i = 0; i < this.vert.lenght; i++)
@@ -55,7 +56,7 @@ class _primitive {
   }
 
   /* Normalize all vertex normals */
-  for (i = 0; i < this.vert.lenght(); i++)
+  for (i = 0; i < this.vert.lenght; i++)
     this.vertexes[i].n.normalise();
   }
 
@@ -84,7 +85,9 @@ class _primitive {
      }
 
     icosider(size){
-      this.vert = [vert(), vert(), vert(), vert(), vert(), vert(),
+      let sqrt5 = Math.sqrt(5);
+
+      this.vert = [vert(0, size / 2, 0), vert(), vert(), vert(), vert(), vert(),
                    vert(), vert(), vert(), vert(), vert(), vert()];
       this.ind = [];
       return this;
@@ -133,7 +136,7 @@ export function render(canvas) {
       
     void main( void )
     {
-      OutColor = vec4(1.0, 0.0, 0.0, 1.0);
+      OutColor = vec4(drawPos.x, drawPos.y, drawPos.z, 1.0);
     }
     `;
 
@@ -147,6 +150,7 @@ export function render(canvas) {
     void main( void )
     {
       gl_Position = vec4(InPosition, 1);
+      drawPos = InPosition;
     }
     `;
 
@@ -165,8 +169,9 @@ export function render(canvas) {
   };
 
   render() {
-    this.gl.clear(this.gl.COLOR_BUFFER_BIT);
-    this.primDraw(primitive("tetraeder", 0.5), matrix.mat4().matrScale(vector.vec3(0, 0, 0)));
+    this.gl.clear(this.gl.COLOR_BUFFER_BIT | this.gl.DEPTH_BUFFER_BIT)
+    let Time = timer.Timer.getTime;
+    this.primDraw(primitive("tetraeder", 0.5), matrix.mat4());
   };
 
   mainloop() {
@@ -182,8 +187,9 @@ export function render(canvas) {
     prim.matw = prim.trans.mulMatr(world),
     prim.wnormal = prim.matw.setInverse().setTranspose(),
     prim.wvp =  prim.matw.mulMatr(this.cam.matrVP);
-
+    prim.autoNormals();
     let vertexes = [];
+
     for (let i = 0; i < prim.ind.length; i++)
       vertexes[i * 3] = prim.vert[prim.ind[i]].p.x, 
       vertexes[i * 3 + 1] = prim.vert[prim.ind[i]].p.y, 
